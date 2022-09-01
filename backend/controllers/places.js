@@ -123,9 +123,17 @@ router.delete('/:placeId/comments/:commentId', async (req, res) => {
         const comment = await Comment.findOne({
             where: { commentId: commentId, placeId: placeId }
         })
+        console.log("comment ID: ", comment.authorId)
+        console.log("author ID: ", req.currentUser)
         if (!comment) {
             res.status(404).json({ message: `Could not find comment with id "${commentId}" for place with id "${placeId}"` })
-        } else {
+        }
+        else if(comment.authorId !== req.currentUser?.userId){
+            res.status(403).json({
+                message: `You do not have permision to delete comment "${comment.commentId}`
+            })
+        } 
+        else {
             await comment.destroy()
             res.json(comment)
         }
