@@ -84,7 +84,7 @@ router.delete('/:placeId', async (req, res) => {
 
 router.post('/:placeId/comments', async (req, res) => {
     const placeId = Number(req.params.placeId)
-    console.log(placeId)
+
     req.body.rant = req.body.rant ? true : false
 
     const place = await Place.findOne({
@@ -92,43 +92,22 @@ router.post('/:placeId/comments', async (req, res) => {
     })
 
     if (!place) {
-        res.status(404).json({ message: `Could not find place with id "${placeId}"` })
+        return res.status(404).json({ message: `Could not find place with id "${placeId}"` })
     }
 
-    let currentUser
-    try {
-        
-        const [method, token] = req.headers.authorization.split(' ')
-        console.log("HERE: ", method)
-        if(method == 'Bearer'){
-            const result = await jwt.decode(process.env.JWT_SECRET, token)
-            const { id } = result.value
-            currentUser = await User.findOne({
-                where:{
-                    userId: id
-                }
-            })
-        }
-    } catch (err) {
-        console.log("CATCH: ", err)
-        currentUser = null
-    }
-
-    if(!currentUser){
-        return res.status(404).json({
-            message: 'You must be logged in to leave a rant or rave'
-        })
+    if (!req.currentUser) {
+        return res.status(404).json({ message: `You must be logged in to leave a rand or rave.` })
     }
 
     const comment = await Comment.create({
         ...req.body,
-        authorId: currentUser.userId,
+        authorId: req.currentUser.userId,
         placeId: placeId
     })
 
     res.send({
         ...comment.toJSON(),
-        author: currentUser
+        author: req.currentUser
     })
 })
 
